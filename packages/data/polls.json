@@ -1,0 +1,15 @@
+[
+  {
+    "pollId": 1,
+    "question": "Is ZK-SNARK technology revolutionary?",
+    "options": [
+      "No",
+      "Yes"
+    ],
+    "duration": 8,
+    "endTime": 1780683174,
+    "merkleRoot": "0x172e850762707bff7e0d4070751477d980cdf6e78fba386932ac695d7839f13c",
+    "txHash": "0x962dc965de3c876ef9e0b07d3d51912f2778d53094eceff1f15fd07912cb122d",
+    "isActive": true
+  }
+]

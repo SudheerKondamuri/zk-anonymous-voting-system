@@ -1,0 +1,18 @@
+[
+  {
+    "pollId": 1,
+    "voterSecret": "0x00e8d9714764fb41ca624b4e28f7aea150f63df772757276ad92ba06a75c0179",
+    "voterNullifier": "0x00ae32aeb959577f791af54092b0a8b2b5cf0a3111e98a24ddb7089a40f68866",
+    "commitment": "0x1bee6a27988676dcd579471d8ece2520638bc0eb2dc6fca0d048c0f08d1c9b49",
+    "voterIndex": 0,
+    "hasVoted": true
+  },
+  {
+    "pollId": 1,
+    "voterSecret": "0x0042317cf7d706e4d1377eb7570c963330fb713ab047d5cf6fc92c3017eb8d61",
+    "voterNullifier": "0x0020c840f5d9bdfe4114553ca53e8f4570a5755edfc1edf0d3f31bfd25338654",
+    "commitment": "0x18f3b66e6ede63cf3346db61a9ddb34c4874356c4cf5e31bdf9cea0a1ae0cb0b",
+    "voterIndex": 1,
+    "hasVoted": true
+  }
+]

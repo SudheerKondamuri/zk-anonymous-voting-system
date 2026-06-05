@@ -107,6 +107,33 @@ async function runTest() {
     console.log('\nWaiting 10 seconds for the poll to expire...');
     await sleep(10000);
 
+    // Advance Hardhat block time to match the real time elapsed
+    try {
+        console.log('Advancing Hardhat chain time to ensure expiration is reflected in block.timestamp...');
+        await fetch('http://localhost:8545', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'evm_increaseTime',
+                params: [10],
+                id: 1
+            })
+        });
+        await fetch('http://localhost:8545', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'evm_mine',
+                params: [],
+                id: 2
+            })
+        });
+    } catch (e) {
+        console.log('Failed to advance block time on Hardhat:', e.message);
+    }
+
     // 10. Get Results
     console.log('\nFetching final poll results...');
     const resultsRes = await fetch(`${API_URL}/api/polls/${pollId}/results`);

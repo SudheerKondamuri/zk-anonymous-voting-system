@@ -30,6 +30,19 @@ const merkleTrees: { [pollId: number]: MerkleTree } = {};
 let provider: ethers.JsonRpcProvider;
 let wallet: any;
 let votingContract: ethers.Contract;
+let currentNonce: number = -1;
+
+async function getNextNonce(): Promise<number> {
+    const onChainNonce = await provider.getTransactionCount(wallet.address, 'latest');
+    const oldNonce = currentNonce;
+    if (currentNonce < onChainNonce) {
+        currentNonce = onChainNonce;
+    }
+    const nonce = currentNonce;
+    currentNonce++;
+    console.log(`getNextNonce: onChainNonce=${onChainNonce}, oldNonce=${oldNonce}, returnedNonce=${nonce}, nextLocalNonce=${currentNonce}`);
+    return nonce;
+}
 
 // Helper to ensure data files exist
 function ensureDataFiles() {
@@ -112,17 +125,18 @@ async function initBlockchain() {
             const votingArtifact = JSON.parse(fs.readFileSync(path.join(artifactsPath, 'AnonymousVoting.sol/AnonymousVoting.json'), 'utf8'));
 
             // Deploy Verifier
-            const nonceVerifier = await provider.getTransactionCount(wallet.address, 'pending');
+            let currentNonce = await provider.getTransactionCount(wallet.address);
+            console.log(`Initial nonce fetched for auto-deploy: ${currentNonce}`);
             const VerifierFactory = new ethers.ContractFactory(verifierArtifact.abi, verifierArtifact.bytecode, wallet);
-            const verifier = await VerifierFactory.deploy({ nonce: nonceVerifier });
+            const verifier = await VerifierFactory.deploy({ nonce: currentNonce });
             await verifier.waitForDeployment();
             const verifierAddress = await verifier.getAddress();
             console.log(`Auto-deployed Groth16Verifier to: ${verifierAddress}`);
+            currentNonce++;
 
             // Deploy AnonymousVoting
-            const nonceVoting = await provider.getTransactionCount(wallet.address, 'pending');
             const VotingFactory = new ethers.ContractFactory(votingArtifact.abi, votingArtifact.bytecode, wallet);
-            const voting = await VotingFactory.deploy(verifierAddress, { nonce: nonceVoting });
+            const voting = await VotingFactory.deploy(verifierAddress, { nonce: currentNonce });
             await voting.waitForDeployment();
             contractAddress = await voting.getAddress();
             abi = votingArtifact.abi;
@@ -141,6 +155,8 @@ async function initBlockchain() {
     if (contractAddress && abi.length > 0) {
         votingContract = new ethers.Contract(contractAddress, abi, wallet);
         console.log(`Connected to AnonymousVoting contract at: ${contractAddress}`);
+        currentNonce = await provider.getTransactionCount(wallet.address, 'latest');
+        console.log(`Initialized global nonce tracking: ${currentNonce}`);
     } else {
         console.error('CRITICAL: Smart contract not deployed, and auto-deployment failed.');
     }
@@ -195,7 +211,7 @@ app.post('/api/polls', async (req: Request, res: Response): Promise<any> => {
 
         console.log(`Creating poll on-chain. Root: ${initialRootHex}`);
         // Call createPoll on contract
-        const nonce = await provider.getTransactionCount(wallet.address, 'pending');
+        const nonce = await getNextNonce();
         const tx = await votingContract.createPoll(question, initialRootHex, duration, { nonce });
         const receipt = await tx.wait();
 
@@ -262,7 +278,7 @@ app.post('/api/polls/:pollId/register', async (req: Request, res: Response): Pro
         // Update on-chain Merkle root
         const newRootHex = toHex(tree.getRoot());
         console.log(`Updating Merkle root on-chain for poll ${pollId} to ${newRootHex}`);
-        const nonce = await provider.getTransactionCount(wallet.address, 'pending');
+        const nonce = await getNextNonce();
         const tx = await votingContract.updateMerkleRoot(pollId, newRootHex, { nonce });
         await tx.wait();
 
@@ -374,7 +390,7 @@ app.post('/api/polls/:pollId/vote', async (req: Request, res: Response): Promise
 
         console.log(`Submitting vote on-chain. NullifierHash: ${nullifierHashHex}`);
         // Call contract
-        const nonce = await provider.getTransactionCount(wallet.address, 'pending');
+        const nonce = await getNextNonce();
         const tx = await votingContract.castVote(
             pollId,
             proofEncoded,
