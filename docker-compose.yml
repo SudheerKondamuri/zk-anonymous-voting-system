@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  hardhat:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8545:8545"
+    command: npx hardhat node --hostname 0.0.0.0
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const req = http.request({host: 'localhost', port: 8545, method: 'POST', headers: {'Content-Type': 'application/json'}}, res => res.statusCode === 200 ? process.exit(0) : process.exit(1)); req.on('error', () => process.exit(1)); req.write(JSON.stringify({jsonrpc: '2.0', method: 'eth_blockNumber', params: [], id: 1})); req.end();"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SEPOLIA_RPC_URL=http://hardhat:8545
+      - ADMIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+    depends_on:
+      hardhat:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); http.get('http://localhost:8000/health', res => res.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1));"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
