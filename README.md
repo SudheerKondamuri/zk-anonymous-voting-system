@@ -37,7 +37,7 @@ docker-compose up --build
 
 This starts:
 - **Hardhat local node** on `http://localhost:8545`
-- **Express API service** on `http://localhost:6000`
+- **Express API service** on `http://localhost:8000`
 
 The API container has a healthcheck and will wait until the Hardhat node is online. On first launch, it will automatically deploy the Solidity verifier and voting contracts, and write the details to `deployment.json`.
 
